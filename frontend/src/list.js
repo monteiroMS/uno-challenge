@@ -156,18 +156,22 @@ export default function CheckboxList() {
    * e o estado de edição é resetado
    */
   const onUpdate = async () => {
-    await updateItem({
-      variables: {
-        values: {
-          id: updating.id,
-          name: updating.name
-        }
-      },
-      awaitRefetchQueries: true,
-      refetchQueries: [getOperationName(GET_TODO_LIST)],
-    })
-
-    setUpdating(INITIAL_UPDATING_STATE);
+    try {
+      await updateItem({
+        variables: {
+          values: {
+            id: updating.id,
+            name: updating.name
+          }
+        },
+        awaitRefetchQueries: true,
+        refetchQueries: [getOperationName(GET_TODO_LIST)],
+      })
+  
+      setUpdating(INITIAL_UPDATING_STATE);
+    } catch (error) {
+      setUpdating((prev) => ({ ...prev, error: error.message }));
+    }
   };
 
   /**
@@ -267,13 +271,15 @@ export default function CheckboxList() {
                         <TextField
                           inputRef={(el) => addTextFieldRef(el, value.id)}
                           value={updating.name}
-                          onChange={(e) => setUpdating((prev) => ({ ...prev, name: e.target.value }))}
+                          onChange={(e) => setUpdating((prev) => ({ ...prev, name: e.target.value, error: '' }))}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") onUpdate()
                           }}
                           variant="standard"
                           size="small"
                           fullWidth
+                          error={!!updating.error}
+                          helperText={updating.error}
                         />
                       ) : (
                         <ListItemText id={value.id} primary={value?.name} />

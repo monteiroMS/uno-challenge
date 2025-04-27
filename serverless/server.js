@@ -64,12 +64,20 @@ const resolvers = {
       });
     },
     updateItem: (_, { values: { id, name } }) => {
+      validate('updateItemSchema', { id, name });
+
+      if (TODO_LIST.some((item) => item.id != id && item.name === name)) {
+        throw new Error("Já existe uma outra tarefa com a descrição informada.");
+      }
+
       const itemIndex = TODO_LIST.findIndex((item) => item.id == id);
       if (itemIndex >= 0) {
         TODO_LIST[itemIndex] = { id, name };
       }
     },
     deleteItem: (_, { id }) => {
+      validate('deleteItemSchema', { id });
+
       const itemIndex = TODO_LIST.findIndex((item) => item.id == id);
       if (itemIndex >= 0) {
         TODO_LIST.splice(itemIndex, 1);
