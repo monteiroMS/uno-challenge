@@ -1,6 +1,7 @@
 const { ApolloServer } = require("@apollo/server");
 const { startStandaloneServer } = require("@apollo/server/standalone");
 const { TODO_LIST } = require("./makeData");
+const { validate } = require("./validator");
 
 /**
  * Gera um número inteiro para utilizar de id
@@ -46,14 +47,16 @@ const resolvers = {
   },
   Mutation: {
     addItem: (_, { values: { name } }) => {
+      validate('addItemSchema', { name });
+
       if (TODO_LIST.some((item) => item.name === name)) {
         throw new Error("Ops! Parece que essa tarefa já está na sua lista. Que tal adicionar uma nova?");
-      } else {
-        TODO_LIST.push({
-          id: getRandomInt(),
-          name,
-        });
       }
+
+      TODO_LIST.push({
+        id: getRandomInt(),
+        name,
+      });
     },
     updateItem: (_, { values: { id, name } }) => {
       const itemIndex = TODO_LIST.findIndex((item) => item.id == id);

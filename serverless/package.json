@@ -9,6 +9,7 @@
     "@apollo/server": "^4.7.4",
     "graphql": "^16.6.0",
     "moment": "^2.29.1",
-    "moment-timezone": "^0.5.33"
+    "moment-timezone": "^0.5.33",
+    "zod": "^3.24.3"
   }
 }
