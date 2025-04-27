@@ -40,8 +40,13 @@ const typeDefs = `#graphql
 const resolvers = {
   Query: {
     todoList: (_, { filter }) => {
-      // Aqui você irá implementar o filtro dos itens
-      console.log(filter);
+      if (filter?.name) {
+        validate('todoListFilterSchema', filter);
+        return TODO_LIST.filter((item) =>
+          item.name.toLowerCase().includes(filter.name.toLowerCase())
+        );
+      }
+
       return TODO_LIST;
     },
   },

@@ -1,8 +1,8 @@
 import { gql } from "@apollo/client";
 
 export const GET_TODO_LIST = gql`
-  query todoList {
-    todoList {
+  query todoList($filter: ItemFilter) {
+    todoList(filter: $filter) {
       id
       name
     }

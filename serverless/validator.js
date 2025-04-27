@@ -4,6 +4,9 @@ const schemas = {
   addItemSchema: z.object({
     name: z.string().min(1, { message: "Por favor, informe a descrição da tarefa." }),
   }),
+  todoListFilterSchema: z.object({
+    name: z.string().min(1, { message: "Por favor, informe o termo a ser pesquisado." }),
+  })
 };
 
 const validate = (schemaName, data) => {
