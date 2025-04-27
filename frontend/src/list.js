@@ -2,12 +2,12 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
-import { Button, TextField } from "@mui/material";
+import { Box, Button, IconButton, TextField, Tooltip } from "@mui/material";
 import { styled } from "styled-components";
 import { useMutation, useQuery } from "@apollo/client";
-import { ADD_ITEM_MUTATION, GET_TODO_LIST } from "./queries";
-import { Delete, Edit } from "@mui/icons-material";
-import { useState } from "react";
+import { ADD_ITEM_MUTATION, GET_TODO_LIST, UPDATE_ITEM_MUTATION } from "./queries";
+import { Check, Delete, Edit, EditOff } from "@mui/icons-material";
+import { useRef, useState } from "react";
 import { getOperationName } from "@apollo/client/utilities";
 
 const Container = styled.div`
@@ -56,11 +56,25 @@ const Title = styled.div`
   font-size: 28px;
 `;
 
+const INITIAL_UPDATING_STATE = {
+  active: false,
+  id: null,
+  name: null
+}
+
 export default function CheckboxList() {
   const [item, setItem] = useState("");
+  const [updating, setUpdating] = useState(INITIAL_UPDATING_STATE);
+
   const { data } = useQuery(GET_TODO_LIST);
 
   const [addItem] = useMutation(ADD_ITEM_MUTATION);
+  const [updateItem] = useMutation(UPDATE_ITEM_MUTATION);
+
+  const textFieldRefs = useRef([]);
+  const addTextFieldRef = (el, id) => {
+    textFieldRefs.current[id] = el;
+  };
 
   const onSubmit = async (event) => {
     event.preventDefault();
@@ -81,9 +95,28 @@ export default function CheckboxList() {
     // Aqui você irá implementar a chamada para o backend de remoção de item
   };
 
-  const onUpdate = async (event) => {
-    console.log(onUpdate);
-    // Aqui você irá implementar a chamada para o backend de edição de item
+  const startUpdate = async ({ id, name }) => {
+    setUpdating({ active: true, id, name });
+    setTimeout(() => {
+      if (textFieldRefs.current[id]) {
+        textFieldRefs.current[id].focus();
+      }
+    }, 50)
+  }
+
+  const onUpdate = async () => {
+    await updateItem({
+      variables: {
+        values: {
+          id: updating.id,
+          name: updating.name
+        }
+      },
+      awaitRefetchQueries: true,
+      refetchQueries: [getOperationName(GET_TODO_LIST)],
+    })
+
+    setUpdating(INITIAL_UPDATING_STATE)
   };
 
   const onFilter = async (event) => {
@@ -125,10 +158,10 @@ export default function CheckboxList() {
         </ContainerTop>
         <List sx={{ width: "100%" }}>
           <ContainerListItem>
-            {data?.todoList?.map((value, index) => {
+            {data?.todoList?.map((value) => {
               return (
                 <ListItem
-                  key={index}
+                  key={value.id}
                   disablePadding
                   sx={{
                     borderRadius: "5px",
@@ -137,9 +170,62 @@ export default function CheckboxList() {
                   }}
                 >
                   <ListItemButton dense>
-                    <ListItemText id={index} primary={value?.name} />
-                    <Edit onClick={onUpdate} />
-                    <Delete onClick={onDelete} />
+                    {updating.active && updating.id === value.id ? (
+                      <TextField
+                        inputRef={(el) => addTextFieldRef(el, value.id)}
+                        value={updating.name}
+                        onChange={(e) => setUpdating((prev) => ({ ...prev, name: e.target.value }))}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") onUpdate()
+                        }}
+                        variant="standard"
+                        size="small"
+                        fullWidth
+                      />
+                    ) : (
+                      <ListItemText id={value.id} primary={value?.name} />
+                    )}
+                    {updating.active && updating.id === value.id ? (
+                      <Box display="flex">
+                        <Tooltip title="Concluir">
+                          <IconButton
+                            size="small" 
+                            variant="text" 
+                            onClick={() => onUpdate()}
+                          >
+                            <Check color="success"  />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Cancelar">
+                          <IconButton
+                            size="small" 
+                            variant="text" 
+                            onClick={() => setUpdating(INITIAL_UPDATING_STATE)}
+                          >
+                            <EditOff color="secondary"  />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    ) : (
+                      <Tooltip title="Editar">
+                        <IconButton
+                          size="small" 
+                          variant="text" 
+                          onClick={() => startUpdate(value)}
+                        >
+                          <Edit color="warning"  />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    <Tooltip title="Excluir">
+                      <IconButton
+                        size="small" 
+                        variant="text" 
+                        onClick={() => onDelete(value)}
+                      >
+                        <Delete color="error"  />
+                      </IconButton>
+                    </Tooltip>
                   </ListItemButton>
                 </ListItem>
               );

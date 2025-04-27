@@ -14,3 +14,9 @@ export const ADD_ITEM_MUTATION = gql`
     addItem(values: $values)
   }
 `;
+
+export const UPDATE_ITEM_MUTATION = gql`
+  mutation updateItem($values: ItemInput) {
+    updateItem(values: $values)
+  }
+`;
