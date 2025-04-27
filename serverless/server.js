@@ -14,6 +14,7 @@ const typeDefs = `#graphql
   type Item {
     id: Int
     name: String
+    completed: Boolean 
   }
 
   input ItemInput {
@@ -34,6 +35,7 @@ const typeDefs = `#graphql
     addItem(values: ItemInput): Boolean
     updateItem(values: ItemInput): Boolean
     deleteItem(id: Int!): Boolean
+    completeItem(id: Int!): Boolean
   }
 `;
 
@@ -81,6 +83,7 @@ const resolvers = {
       TODO_LIST.push({
         id: getRandomInt(),
         name,
+        completed: false
       });
 
       return true;
@@ -108,7 +111,7 @@ const resolvers = {
 
       const itemIndex = TODO_LIST.findIndex((item) => item.id == id);
       if (itemIndex >= 0) {
-        TODO_LIST[itemIndex] = { id, name };
+        TODO_LIST[itemIndex] = { ...TODO_LIST[itemIndex], name };
         return true;
       }
 
@@ -133,6 +136,30 @@ const resolvers = {
       if (itemIndex >= 0) {
         TODO_LIST.splice(itemIndex, 1);
 
+        return true;
+      }
+
+      throw new Error('Item não encontrado.');
+    },
+    /**
+     * Executa o toggle do status da tarefa pelo ID.
+     * 
+     * Valida o ID recebido, localiza o item na lista e atualiza seu status. 
+     * Se o item não for encontrado, lança um erro.
+     * 
+     * @param {object} _ - Contexto do GraphQL (não utilizado).
+     * @param {object} params - Parâmetros recebidos na mutation.
+     * @param {object} params.values - Objeto contendo o ID da tarefa.
+     * @param {number} params.values.id - ID da tarefa a ser marcada como concluída.
+     * @returns {boolean} Retorna `true` se a tarefa foi marcada com sucesso.
+     * @throws {Error} Lança um erro se o item não for encontrado na lista.
+     */
+    completeItem: (_, { id }) => {
+      validate('completeItemSchema', { id });
+
+      const itemIndex = TODO_LIST.findIndex((item) => item.id == id);
+      if (itemIndex >= 0) {
+        TODO_LIST[itemIndex].completed = !TODO_LIST[itemIndex].completed;
         return true;
       }
 

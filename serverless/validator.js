@@ -11,6 +11,9 @@ const schemas = {
   deleteItemSchema: z.object({
     id: z.number().int({ message: "O id deve ser um número inteiro." }),
   }),
+  completeItemSchema: z.object({
+    id: z.number().int({ message: "O id deve ser um número inteiro." }),
+  }),
   todoListFilterSchema: z.object({
     name: z.string().min(1, { message: "Por favor, informe o termo a ser pesquisado." }),
   }),

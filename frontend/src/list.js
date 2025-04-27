@@ -5,7 +5,7 @@ import ListItemText from "@mui/material/ListItemText";
 import { Box, Button, IconButton, TextField, Tooltip } from "@mui/material";
 import { styled } from "styled-components";
 import { useMutation, useQuery } from "@apollo/client";
-import { ADD_ITEM_MUTATION, DELETE_ITEM_MUTATION, GET_TODO_LIST, UPDATE_ITEM_MUTATION } from "./queries";
+import { ADD_ITEM_MUTATION, COMPLETE_ITEM_MUTATION, DELETE_ITEM_MUTATION, GET_TODO_LIST, UPDATE_ITEM_MUTATION } from "./queries";
 import { Check, Delete, Edit, EditOff, FilterAltOff } from "@mui/icons-material";
 import { useEffect, useRef, useState } from "react";
 import { getOperationName } from "@apollo/client/utilities";
@@ -75,6 +75,7 @@ export default function CheckboxList() {
   const [addItem] = useMutation(ADD_ITEM_MUTATION);
   const [updateItem] = useMutation(UPDATE_ITEM_MUTATION);
   const [deleteItem] = useMutation(DELETE_ITEM_MUTATION);
+  const [completeItem] = useMutation(COMPLETE_ITEM_MUTATION);
 
   /**
    * Métodos responsáveis por criar as referências dos campos
@@ -122,6 +123,14 @@ export default function CheckboxList() {
    */
   const onDelete = async ({ id }) => {
     await deleteItem({
+      variables: { id },
+      awaitRefetchQueries: true,
+      refetchQueries: [getOperationName(GET_TODO_LIST)],
+    });
+  };
+
+  const onComplete = async ({ id }) => {
+    await completeItem({
       variables: { id },
       awaitRefetchQueries: true,
       refetchQueries: [getOperationName(GET_TODO_LIST)],
@@ -266,7 +275,7 @@ export default function CheckboxList() {
                       marginBottom: "5px",
                     }}
                   >
-                    <ListItemButton dense>
+                    <ListItemButton onClick={() => onComplete(value)} dense>
                       {updating.active && updating.id === value.id ? (
                         <TextField
                           inputRef={(el) => addTextFieldRef(el, value.id)}
@@ -282,7 +291,14 @@ export default function CheckboxList() {
                           helperText={updating.error}
                         />
                       ) : (
-                        <ListItemText id={value.id} primary={value?.name} />
+                        <ListItemText
+                          id={value.id}
+                          primary={value?.name}
+                          sx={{
+                            textDecoration: value.completed ? 'line-through' : 'none',
+                            color: value.completed ? 'gray' : 'inherit',
+                          }}
+                        />
                       )}
                       {updating.active && updating.id === value.id ? (
                         <Box display="flex">
@@ -290,7 +306,10 @@ export default function CheckboxList() {
                             <IconButton
                               size="small" 
                               variant="text" 
-                              onClick={() => onUpdate()}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                onUpdate();
+                              }}
                             >
                               <Check color="success"  />
                             </IconButton>
@@ -299,7 +318,10 @@ export default function CheckboxList() {
                             <IconButton
                               size="small" 
                               variant="text" 
-                              onClick={() => setUpdating(INITIAL_UPDATING_STATE)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setUpdating(INITIAL_UPDATING_STATE);
+                              }}
                             >
                               <EditOff color="secondary"  />
                             </IconButton>
@@ -310,7 +332,10 @@ export default function CheckboxList() {
                           <IconButton
                             size="small" 
                             variant="text" 
-                            onClick={() => startUpdate(value)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              startUpdate(value);
+                            }}
                           >
                             <Edit color="warning"  />
                           </IconButton>
@@ -320,7 +345,10 @@ export default function CheckboxList() {
                         <IconButton
                           size="small" 
                           variant="text" 
-                          onClick={() => onDelete(value)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onDelete(value);
+                          }}
                         >
                           <Delete color="error"  />
                         </IconButton>
