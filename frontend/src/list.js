@@ -76,11 +76,21 @@ export default function CheckboxList() {
   const [updateItem] = useMutation(UPDATE_ITEM_MUTATION);
   const [deleteItem] = useMutation(DELETE_ITEM_MUTATION);
 
+  /**
+   * Métodos responsáveis por criar as referências dos campos
+   * de edição do item, permitindo o focus automático no 
+   * input ao clicar em "editar"
+   */
   const textFieldRefs = useRef([]);
   const addTextFieldRef = (el, id) => {
     textFieldRefs.current[id] = el;
   };
 
+  /**
+   * Método responsável por inserir o item na listagem
+   * com tratamento de erros que podem vir da API
+   * @param {*} event 
+   */
   const onSubmit = async (event) => {
     event.preventDefault();
     try {
@@ -101,6 +111,15 @@ export default function CheckboxList() {
     }
   };
 
+  /**
+   * Método que executa a requisição de exclusão de item
+   * recebendo um item como parâmetro e enviando o id
+   * para o backend
+   * 
+   * Após execução com sucesso da query, é realizado um
+   * novo fetch dos dados para manter a lista atualizada
+   * @param {*} item  
+   */
   const onDelete = async ({ id }) => {
     await deleteItem({
       variables: { id },
@@ -109,6 +128,14 @@ export default function CheckboxList() {
     });
   };
 
+  /**
+   * Método responsável por iniciar um fluxo de edição.
+   * Recebe um item por parâmetro, atualiza o estado
+   * que controla a edição e executa um focus no input
+   * de texto do item a ser editado, reduzindo cliques
+   * para o usuário
+   * @param {*} item 
+   */
   const startUpdate = async ({ id, name }) => {
     setUpdating({ active: true, id, name });
     setTimeout(() => {
@@ -118,6 +145,16 @@ export default function CheckboxList() {
     }, 50);
   }
 
+  /**
+   * Método que executa a requisição de atualização de item
+   * enviando os dados que estão no estado da edição para o
+   * backend. Foi adicionado um tratamento de erro para 
+   * possíveis retornos da API
+   * 
+   * Após execução com sucesso da query, é realizado um
+   * novo fetch dos dados para manter a lista atualizada
+   * e o estado de edição é resetado
+   */
   const onUpdate = async () => {
     await updateItem({
       variables: {
@@ -133,6 +170,12 @@ export default function CheckboxList() {
     setUpdating(INITIAL_UPDATING_STATE);
   };
 
+  /**
+   * Método que executa tanto a ação de filtrar
+   * quanto a ação de limpar o filtro, de acordo
+   * com o que recebe por parâmetro
+   * @param {*} type 
+   */
   const onFilter = async (type = 'filter') => {
     if (type === 'clear') {
       setFilter({});
@@ -144,6 +187,11 @@ export default function CheckboxList() {
     }
   };
 
+  /**
+   * O objetivo desse useEffect é assistir aos
+   * erros que podem vir da request de listagem
+   * dos itens
+   */
   useEffect(() => {
     if (getTodoListError?.message) {
       setError(getTodoListError.message);
