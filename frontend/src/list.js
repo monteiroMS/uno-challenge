@@ -5,7 +5,7 @@ import ListItemText from "@mui/material/ListItemText";
 import { Box, Button, IconButton, TextField, Tooltip } from "@mui/material";
 import { styled } from "styled-components";
 import { useMutation, useQuery } from "@apollo/client";
-import { ADD_ITEM_MUTATION, GET_TODO_LIST, UPDATE_ITEM_MUTATION } from "./queries";
+import { ADD_ITEM_MUTATION, DELETE_ITEM_MUTATION, GET_TODO_LIST, UPDATE_ITEM_MUTATION } from "./queries";
 import { Check, Delete, Edit, EditOff } from "@mui/icons-material";
 import { useRef, useState } from "react";
 import { getOperationName } from "@apollo/client/utilities";
@@ -70,6 +70,7 @@ export default function CheckboxList() {
 
   const [addItem] = useMutation(ADD_ITEM_MUTATION);
   const [updateItem] = useMutation(UPDATE_ITEM_MUTATION);
+  const [deleteItem] = useMutation(DELETE_ITEM_MUTATION);
 
   const textFieldRefs = useRef([]);
   const addTextFieldRef = (el, id) => {
@@ -90,9 +91,12 @@ export default function CheckboxList() {
     setItem("");
   };
 
-  const onDelete = async (event) => {
-    console.log(onDelete);
-    // Aqui você irá implementar a chamada para o backend de remoção de item
+  const onDelete = async ({ id }) => {
+    await deleteItem({
+      variables: { id },
+      awaitRefetchQueries: true,
+      refetchQueries: [getOperationName(GET_TODO_LIST)],
+    })
   };
 
   const startUpdate = async ({ id, name }) => {

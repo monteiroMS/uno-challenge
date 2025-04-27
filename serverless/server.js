@@ -52,14 +52,16 @@ const resolvers = {
       });
     },
     updateItem: (_, { values: { id, name } }) => {
-      const itemIndex = TODO_LIST.findIndex((todoItem) => todoItem.id == id)
+      const itemIndex = TODO_LIST.findIndex((item) => item.id == id)
       if (itemIndex >= 0) {
         TODO_LIST[itemIndex] = { id, name }
       }
     },
     deleteItem: (_, { id }) => {
-      // Aqui você irá implementar a remoção do item
-      console.log(id);
+      const itemIndex = TODO_LIST.findIndex((item) => item.id == id)
+      if (itemIndex >= 0) {
+        TODO_LIST.splice(itemIndex, 1);
+      }
     },
   },
 };

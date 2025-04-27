@@ -20,3 +20,9 @@ export const UPDATE_ITEM_MUTATION = gql`
     updateItem(values: $values)
   }
 `;
+
+export const DELETE_ITEM_MUTATION = gql`
+  mutation deleteItem($id: Int!) {
+    deleteItem(id: $id)
+  }
+`;
