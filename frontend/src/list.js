@@ -201,7 +201,7 @@ export default function CheckboxList() {
           </ContainerButton>
         </ContainerTop>
         {!!data?.todoList?.length && (
-          <List sx={{ width: "100%" }}>
+          <List sx={{ padding: '10px' }}>
             <ContainerListItem>
               {data?.todoList?.map((value) => {
                 return (
