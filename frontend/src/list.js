@@ -119,7 +119,7 @@ export default function CheckboxList() {
    * 
    * Após execução com sucesso da query, é realizado um
    * novo fetch dos dados para manter a lista atualizada
-   * @param {*} item  
+   * @param {object} item  
    */
   const onDelete = async ({ id }) => {
     await deleteItem({
@@ -129,6 +129,15 @@ export default function CheckboxList() {
     });
   };
 
+  /**
+   * Método que executa a requisição de toggle de status
+   * recebendo um item como parâmetro e enviando o id
+   * para o backend
+   * 
+   * Após execução com sucesso da query, é realizado um
+   * novo fetch dos dados para manter a lista atualizada
+   * @param {object} item 
+   */
   const onComplete = async ({ id }) => {
     await completeItem({
       variables: { id },
@@ -143,7 +152,7 @@ export default function CheckboxList() {
    * que controla a edição e executa um focus no input
    * de texto do item a ser editado, reduzindo cliques
    * para o usuário
-   * @param {*} item 
+   * @param {object} item 
    */
   const startUpdate = async ({ id, name }) => {
     setUpdating({ active: true, id, name });
@@ -187,7 +196,7 @@ export default function CheckboxList() {
    * Método que executa tanto a ação de filtrar
    * quanto a ação de limpar o filtro, de acordo
    * com o que recebe por parâmetro
-   * @param {*} type 
+   * @param {string} type 
    */
   const onFilter = async (type = 'filter') => {
     if (type === 'clear') {
