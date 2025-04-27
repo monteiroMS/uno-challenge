@@ -63,7 +63,8 @@ const INITIAL_UPDATING_STATE = {
 }
 
 export default function CheckboxList() {
-  const [item, setItem] = useState("");
+  const [item, setItem] = useState('');
+  const [error, setError] = useState('');
   const [updating, setUpdating] = useState(INITIAL_UPDATING_STATE);
 
   const { data } = useQuery(GET_TODO_LIST);
@@ -79,16 +80,20 @@ export default function CheckboxList() {
 
   const onSubmit = async (event) => {
     event.preventDefault();
-    await addItem({
-      variables: {
-        values: {
-          name: item,
+    try {
+      await addItem({
+        variables: {
+          values: {
+            name: item,
+          },
         },
-      },
-      awaitRefetchQueries: true,
-      refetchQueries: [getOperationName(GET_TODO_LIST)],
-    });
-    setItem("");
+        awaitRefetchQueries: true,
+        refetchQueries: [getOperationName(GET_TODO_LIST)],
+      });
+      setItem("");
+    } catch (error) {
+      setError(error.message)
+    }
   };
 
   const onDelete = async ({ id }) => {
@@ -139,7 +144,12 @@ export default function CheckboxList() {
             value={item}
             type="text"
             variant="standard"
-            onChange={(e) => setItem(e?.target?.value)}
+            onChange={(e) => {
+              setError('')
+              setItem(e?.target?.value)
+            }}
+            error={!!error}
+            helperText={error}
           />
           <ContainerButton>
             <Button
