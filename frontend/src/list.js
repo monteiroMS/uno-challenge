@@ -284,7 +284,11 @@ export default function CheckboxList() {
                       marginBottom: "5px",
                     }}
                   >
-                    <ListItemButton onClick={() => onComplete(value)} dense>
+                    <ListItemButton
+                      onClick={() => onComplete(value)}
+                      onDoubleClick={() => startUpdate(value)}
+                      dense
+                    >
                       {updating.active && updating.id === value.id ? (
                         <TextField
                           inputRef={(el) => addTextFieldRef(el, value.id)}
