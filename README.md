@@ -35,7 +35,9 @@ Lembrando que deverá seguir o padrão já pré-estabelecido no projeto na qual 
 
 ## Como rodar o projeto?
 
-Você deverá entrar dentro da pasta `frontend` e rodar o comando `yarn` ou `npm install`. (Lembre se de instalar o [Nodejs](https://nodejs.org/en/download)) em seu computador.
+Você deverá entrar dentro da pasta `frontend` e rodar o comando `yarn` ou `npm install`. (Lembre se de instalar o [Nodejs](https://nodejs.org/en/download)) em seu computador. 
+
+Caso ocorra um erro de conflito de dependências ao rodar `npm install`, rodar novamente o comando com a flag `npm i --legacy-peer-deps` para ignorar erros de conflitos entre versões de peer dependencies.
 
 Após ter instalado as dependências com o comando acima, você deverá rodar o comando `yarn start` ainda dentro da pasta frontend, isso irá fazer com que seu frontend suba em `http://localhost:3000`.
 
