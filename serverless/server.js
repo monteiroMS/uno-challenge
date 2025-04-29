@@ -15,6 +15,7 @@ const typeDefs = `#graphql
     id: Int
     name: String
     completed: Boolean 
+    order: Int
   }
 
   input ItemInput {
@@ -27,6 +28,11 @@ const typeDefs = `#graphql
     name: String
   }
 
+  input ReorderItemInput {
+    id: Int
+    order: Int
+  }
+
   type Query {
     todoList(filter: ItemFilter): [Item]
   }
@@ -36,6 +42,7 @@ const typeDefs = `#graphql
     updateItem(values: ItemInput): Boolean
     deleteItem(id: Int!): Boolean
     completeItem(id: Int!): Boolean
+    reorderItem(values: ReorderItemInput): Boolean
   }
 `;
 
@@ -57,6 +64,8 @@ const resolvers = {
           item.name.toLowerCase().includes(filter.name.toLowerCase())
         );
       }
+
+      TODO_LIST.sort((a, b) => a.order - b.order);
 
       return TODO_LIST;
     },
@@ -83,7 +92,8 @@ const resolvers = {
       TODO_LIST.push({
         id: getRandomInt(),
         name,
-        completed: false
+        completed: false,
+        order: TODO_LIST.length + 1,
       });
 
       return true;
@@ -160,6 +170,50 @@ const resolvers = {
       const itemIndex = TODO_LIST.findIndex((item) => item.id == id);
       if (itemIndex >= 0) {
         TODO_LIST[itemIndex].completed = !TODO_LIST[itemIndex].completed;
+        return true;
+      }
+
+      throw new Error('Item não encontrado.');
+    },
+    /**
+     * Reordena uma tarefa na lista com base no ID e na nova ordem.
+     * 
+     * Valida o ID e a nova ordem recebidos, localiza o item na lista e ajusta
+     * a ordem dos demais itens conforme necessário. Caso o item não seja encontrado,
+     * lança um erro.
+     * 
+     * @param {object} _ - Contexto do GraphQL (não utilizado).
+     * @param {object} params - Parâmetros recebidos na mutation.
+     * @param {object} params.values - Objeto contendo os valores para reordenação.
+     * @param {number} params.values.id - ID da tarefa a ser reordenada.
+     * @param {number} params.values.order - Nova posição da tarefa na lista.
+     * @returns {boolean} Retorna `true` se a tarefa foi reordenada com sucesso.
+     * @throws {Error} Lança um erro se o item não for encontrado na lista.
+     */
+    reorderItem: (_, { values: { id, order } }) => {
+      validate('reorderItemSchema', { id, order });
+
+      const itemIndex = TODO_LIST.findIndex((item) => item.id == id);
+      if (itemIndex >= 0) {
+        const [movedItem] = TODO_LIST.splice(itemIndex, 1);
+
+        if (movedItem.order > order) {
+          TODO_LIST.forEach((item) => {
+            if (item.order >= order && item.order < movedItem.order) {
+              item.order += 1;
+            }
+          });
+        } else {
+          TODO_LIST.forEach((item) => {
+            if (item.order <= order && item.order > movedItem.order) {
+              item.order -= 1;
+            }
+          });
+        }
+
+        movedItem.order = order;
+        TODO_LIST.push(movedItem);
+        TODO_LIST.sort((a, b) => a.order - b.order);
         return true;
       }
 

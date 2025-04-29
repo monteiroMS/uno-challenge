@@ -6,6 +6,7 @@ export const GET_TODO_LIST = gql`
       id
       name
       completed
+      order
     }
   }
 `;
@@ -31,5 +32,11 @@ export const DELETE_ITEM_MUTATION = gql`
 export const COMPLETE_ITEM_MUTATION = gql`
   mutation completeItem($id: Int!) {
     completeItem(id: $id)
+  }
+`;
+
+export const REORDER_ITEM_MUTATION = gql`
+  mutation reorderItem($values: ReorderItemInput) {
+    reorderItem(values: $values)
   }
 `;

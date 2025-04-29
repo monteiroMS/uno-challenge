@@ -5,10 +5,13 @@ import ListItemText from "@mui/material/ListItemText";
 import { Box, Button, IconButton, TextField, Tooltip } from "@mui/material";
 import { styled } from "styled-components";
 import { useMutation, useQuery } from "@apollo/client";
-import { ADD_ITEM_MUTATION, COMPLETE_ITEM_MUTATION, DELETE_ITEM_MUTATION, GET_TODO_LIST, UPDATE_ITEM_MUTATION } from "./queries";
+import { ADD_ITEM_MUTATION, COMPLETE_ITEM_MUTATION, DELETE_ITEM_MUTATION, GET_TODO_LIST, REORDER_ITEM_MUTATION, UPDATE_ITEM_MUTATION } from "./queries";
 import { Check, Delete, Edit, EditOff, FilterAltOff } from "@mui/icons-material";
 import { useEffect, useRef, useState } from "react";
 import { getOperationName } from "@apollo/client/utilities";
+import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import SortableItem from './sortable/sortableItem';
 
 const Container = styled.div`
   display: flex;
@@ -67,6 +70,7 @@ export default function CheckboxList() {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState({});
   const [updating, setUpdating] = useState(INITIAL_UPDATING_STATE);
+  const [items, setItems] = useState([]);
 
   const { data, error: getTodoListError } = useQuery(GET_TODO_LIST, {
     variables: { filter },
@@ -76,6 +80,20 @@ export default function CheckboxList() {
   const [updateItem] = useMutation(UPDATE_ITEM_MUTATION);
   const [deleteItem] = useMutation(DELETE_ITEM_MUTATION);
   const [completeItem] = useMutation(COMPLETE_ITEM_MUTATION);
+  const [reorderItem] = useMutation(REORDER_ITEM_MUTATION);
+
+  /**
+   * Configurações da biblioteca de drag-and-drop
+   * PointerSensor define configurações para arrastar e soltar do mouse,
+   * KeyboardSensor é recomendado configurar por questões de
+   * acessibilidade
+   */
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   /**
    * Métodos responsáveis por criar as referências dos campos
@@ -210,6 +228,42 @@ export default function CheckboxList() {
   };
 
   /**
+    * Lida com o evento de término de arrastar e soltar para reordenar itens da lista.
+    * Atualiza o estado com a nova ordem e envia a ordem atualizada para o servidor.
+    * Se a requisição para o servidor falhar, o estado é revertido para a ordem anterior.
+    *  @param {object} event - O objeto do evento de arrastar. 
+    */
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+    
+    if (active.id !== over.id) {
+      const oldItems = [...items];
+
+      setItems((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        
+        return arrayMove(items, oldIndex, newIndex);
+      });
+
+      try {
+        await reorderItem({
+          variables: {
+            values: {
+              id: active.data.current.id,
+              order: over.data.current.order
+            }
+          },
+          awaitRefetchQueries: true,
+          refetchQueries: [getOperationName(GET_TODO_LIST)],
+        })
+      } catch (error) {
+        setItems(oldItems);
+      }
+    }
+  }
+
+  /**
    * O objetivo desse useEffect é assistir aos
    * erros que podem vir da request de listagem
    * dos itens
@@ -219,6 +273,17 @@ export default function CheckboxList() {
       setError(getTodoListError.message);
     }
   }, [getTodoListError]);
+
+  /**
+   * O objetivo desse useEffect é assistir as
+   * alterações vindas do backend na listagem
+   * e atualizar a lista reordenável
+   */
+  useEffect(() => {
+    if (data && data.todoList) {
+      setItems(data.todoList);
+    }
+  }, [data]);
 
   return (
     <Container>
@@ -270,106 +335,119 @@ export default function CheckboxList() {
             </Button>
           </ContainerButton>
         </ContainerTop>
-        {!!data?.todoList?.length && (
+        {!!items?.length && (
           <List sx={{ padding: '10px' }}>
             <ContainerListItem>
-              {data?.todoList?.map((value) => {
-                return (
-                  <ListItem
-                    key={value.id}
-                    disablePadding
-                    sx={{
-                      borderRadius: "5px",
-                      marginTop: "5px",
-                      marginBottom: "5px",
-                    }}
-                  >
-                    <ListItemButton
-                      onClick={() => onComplete(value)}
-                      onDoubleClick={() => startUpdate(value)}
-                      dense
-                    >
-                      {updating.active && updating.id === value.id ? (
-                        <TextField
-                          inputRef={(el) => addTextFieldRef(el, value.id)}
-                          value={updating.name}
-                          onChange={(e) => setUpdating((prev) => ({ ...prev, name: e.target.value, error: '' }))}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") onUpdate()
-                          }}
-                          variant="standard"
-                          size="small"
-                          fullWidth
-                          error={!!updating.error}
-                          helperText={updating.error}
-                        />
-                      ) : (
-                        <ListItemText
-                          id={value.id}
-                          primary={value?.name}
-                          sx={{
-                            textDecoration: value.completed ? 'line-through' : 'none',
-                            color: value.completed ? 'gray' : 'inherit',
-                          }}
-                        />
-                      )}
-                      {updating.active && updating.id === value.id ? (
-                        <Box display="flex">
-                          <Tooltip title="Concluir">
-                            <IconButton
-                              size="small" 
-                              variant="text" 
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                onUpdate();
-                              }}
-                            >
-                              <Check color="success"  />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Cancelar">
-                            <IconButton
-                              size="small" 
-                              variant="text" 
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setUpdating(INITIAL_UPDATING_STATE);
-                              }}
-                            >
-                              <EditOff color="secondary"  />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      ) : (
-                        <Tooltip title="Editar">
-                          <IconButton
-                            size="small" 
-                            variant="text" 
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              startUpdate(value);
-                            }}
-                          >
-                            <Edit color="warning"  />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                      <Tooltip title="Excluir">
-                        <IconButton
-                          size="small" 
-                          variant="text" 
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onDelete(value);
-                          }}
+            <DndContext 
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext 
+                items={items}
+                strategy={verticalListSortingStrategy}
+              >
+                {items?.map((value) => {
+                  return (
+                    <SortableItem key={value.id} item={value}>
+                      <ListItem
+                        key={value.id}
+                        disablePadding
+                        sx={{
+                          borderRadius: "5px",
+                          marginTop: "5px",
+                          marginBottom: "5px",
+                        }}
+                      >
+                        <ListItemButton
+                          onClick={() => onComplete(value)}
+                          onDoubleClick={() => startUpdate(value)}
+                          dense
                         >
-                          <Delete color="error"  />
-                        </IconButton>
-                      </Tooltip>
-                    </ListItemButton>
-                  </ListItem>
-                );
-              })}
+                          {updating.active && updating.id === value.id ? (
+                            <TextField
+                              inputRef={(el) => addTextFieldRef(el, value.id)}
+                              value={updating.name}
+                              onChange={(e) => setUpdating((prev) => ({ ...prev, name: e.target.value, error: '' }))}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") onUpdate()
+                              }}
+                              variant="standard"
+                              size="small"
+                              fullWidth
+                              error={!!updating.error}
+                              helperText={updating.error}
+                            />
+                          ) : (
+                            <ListItemText
+                              id={value.id}
+                              primary={value?.name}
+                              sx={{
+                                textDecoration: value.completed ? 'line-through' : 'none',
+                                color: value.completed ? 'gray' : 'inherit',
+                              }}
+                            />
+                          )}
+                          {updating.active && updating.id === value.id ? (
+                            <Box display="flex">
+                              <Tooltip title="Concluir">
+                                <IconButton
+                                  size="small" 
+                                  variant="text" 
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    onUpdate();
+                                  }}
+                                >
+                                  <Check color="success"  />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Cancelar">
+                                <IconButton
+                                  size="small" 
+                                  variant="text" 
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setUpdating(INITIAL_UPDATING_STATE);
+                                  }}
+                                >
+                                  <EditOff color="secondary"  />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          ) : (
+                            <Tooltip title="Editar">
+                              <IconButton
+                                size="small" 
+                                variant="text" 
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  startUpdate(value);
+                                }}
+                              >
+                                <Edit color="warning"  />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          <Tooltip title="Excluir">
+                            <IconButton
+                              size="small" 
+                              variant="text" 
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                onDelete(value);
+                              }}
+                            >
+                              <Delete color="error"  />
+                            </IconButton>
+                          </Tooltip>
+                        </ListItemButton>
+                      </ListItem>
+                    </SortableItem>
+                  );
+                })}
+              </SortableContext>
+            </DndContext>
             </ContainerListItem>
           </List>
         )}

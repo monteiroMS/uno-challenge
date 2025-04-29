@@ -17,6 +17,10 @@ const schemas = {
   todoListFilterSchema: z.object({
     name: z.string().min(1, { message: "Por favor, informe o termo a ser pesquisado." }),
   }),
+  reorderItemSchema: z.object({
+    id: z.number().int({ message: "O id deve ser um número inteiro." }),
+    order: z.number().int({ message: "O número de ordem deve ser um número inteiro." }),
+  }),
 };
 
 const validate = (schemaName, data) => {
